@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+  <script src="emtest.js"></script>
+  <script src="test.js"></script>
+  <head>
+    <h1 id="header1">WebAssembly Gameboy Emulator</h1>
+  </head>
+  <style>
+  .slidecontainer
+  {
+    width: 100%; /* Width of the outside container */
+  }
+
+  /* The slider itself */
+  .slider
+  {
+    -webkit-appearance: none;  /* Override default CSS styles */
+    appearance: none;
+    margin-top:10px;
+    width: 400px;
+    height: 10px; /* Specified height */
+    background: #d3d3d3; /* Grey background */
+    outline: none; /* Remove outline */
+    opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+    border:2px solid #404040;
+  }
+
+  /* Mouse-over effects */
+  .slider:hover
+  {
+    opacity: 1; /* Fully shown on mouse-over */
+  }
+
+  /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+  .slider::-webkit-slider-thumb
+  {
+    -webkit-appearance: none; /* Override default look */
+    border:2px solid #404040;
+    appearance: none;
+    width: 25px; /* Set a specific slider handle width */
+    height: 25px; /* Slider handle height */
+    background: #8080FF; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+  }
+
+  .slider::-moz-range-thumb
+  {
+    width: 25px; /* Set a specific slider handle width */
+    height: 25px; /* Slider handle height */
+    background: #4CAF50; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+    border:2px solid #404040;
+  }
+
+  .consolas
+  {
+    font-family:consolas;
+    font-size:12px;
+  }
+
+  div.slidecontainer
+  {
+    line-height:60%;
+  }
+
+  table, th, td
+  {
+    font-family:consolas;
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  </style>
+  <body>
+    <div id="canvas/settings/instructions">
+      <div id="canvas/settings" style="width:50%;float:left">
+        <div style="margin-left:10.5em;">
+          <canvas id="canvas" style="border:2px solid #808080"></canvas>
+        </div>
+        <div style="margin-left:6.25em">
+          <div>
+            <button class="consolas" id="togglebutton" onclick="toggleEmulator()" style="width:200px;background-color:#FF4040">Start</button>
+            <button class="consolas" id="screenbutton" onclick="refreshScreen()" style="width:200px;background-color:#8080FF">Refresh Screen</button>
+          </div>
+          <div>
+            <button class="consolas" id="toggleRegisters" onclick="toggleRegisterDumps()" style="width:200px;background-color:#FF4040">Toggle Register Dumping</button>
+            <button class="consolas" id="dumpRegisters" onclick="emulator.dumpRegisters()" style="width:200px;background-color:#8080FF">Dump Registers</button>
+          </div>
+          <div>
+            <button class="consolas" id="toggleMemory" onclick="toggleMemoryDumps()" style="width:200px;background-color:#FF4040">Toggle Memory Dumping</button>
+            <button class="consolas" id="dumpMemory" onclick="emulator.dumpMemory()" style="width:200px;background-color:#8080FF">Dump Memory</button>
+          </div>
+          <div>
+            <button class="consolas" id="toggleOpcode" onclick="toggleOpcodeDebugging()" style="width:200px;background-color:#FF4040">Toggle OpCode Debug Writes</button>
+            <button class="consolas" id="memory-refresh" onclick="refreshMemory()" style="width:200px;background-color:#8080FF">Refresh Memory</button>
+          </div>
+          <div>
+            <button class="consolas" id="toggle-instructions-info" onclick="toggleInstructionsInfo()" style="width:200px;background-color:#FF4040">Toggle Instructions Info</button>
+            <button class="consolas" id="register-refresh" onclick="refreshRegisters()"style="width:200px;background-color:#8080FF">Refresh Registers</button>
+          </div>
+          <div>
+            <label for="num-instrs-exe-label" style="font-family:consolas;font-size:12px;"># of Instructions to Execute</label>
+            <input type="text" id="num-instrs-exe" name="memory-addr" style="margin-top:1%;font-family:consolas;font-size:12px;">
+            <button class="consolas" id="num-instrs-exe-button" onclick="executeNumInstructions()" style="width:69px;background-color:#8080FF">Execute</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="instructions" style="margin:auto;width:50%;float:right;">
+        <div style="height:20%;width:80%;border:2px solid #808080;">
+          <h3 id="instr_1"style="line-height:100%;font-family:consolas;text-align:center"></h3>
+        </div>
+        <div style="height:20%;width:80%;border:2px solid #808080;">
+          <h3 id="instr_2" style="line-height:100%;font-family:consolas;text-align:center"></h3>
+        </div>
+        <div style="height:20%;width:80%;border:2px solid #808080;">
+          <h3 id="instr_3" style="line-height:100%;font-family:consolas;text-align:center"></h3>
+        </div>
+        <div style="height:20%;width:80%;border:2px solid #808080;">
+          <h3 id="instr_4" style="line-height:100%;font-family:consolas;text-align:center"></h3>
+        </div>
+        <div style="height:20%;width:80%;border:2px solid #808080;">
+          <h3 id="instr_5" style="line-height:100%;font-family:consolas;text-align:center"></h3>
+        </div>
+      </div>
+      <button class="consolas" id="toggle-instructions-tracking" style="margin-left:13%;width:200px;background-color:#40FF40;" onclick="toggleInstructionTracking()">Stop tracking instructions</button>
+    </div>
+    <div id="instructions-div" class="slidecontainer" style="border:2px solid #808080;border-radius:20px;margin:auto;padding-top:0.5%;background-color:#d0d0d0;text-align:center;display:none;float:left;">
+      <input type="range" min="1" max="100" value="100" class="slider" id="speed">
+      <p id="speedValue" style="font-family:consolas">Instructions per Second: No Limit</p>
+      <p id="avgInstrs" style="font-family:consolas">Average instructions per second: </p>
+      <p id="totalInstrs" style="font-family:consolas">Total instructions executed: </p>
+      <p id="totalSeconds" style="font-family:consolas">Uptime: 0h:0m:0s</p>
+      <br>
+    </div>
+    <div id="memory-search" style="width:50%;">
+      <label for="memory-addr" style="font-family:consolas;">Memory Address: 0x</label>
+      <input type="text" id="memory-addr" name="memory-addr" style="margin-top:1%;font-family:consolas;">
+      <button class="consolas" id="memory-search" onclick="memorySearch()" style="width:200px;background-color:#8080FF">Search</button>
+    </div>
+
+    <div style="width:49%; margin-top:1%; float:left;">
+      <table style="width:97.5%">
+        <tr>
+          <th style="width:50%">Memory Address</th>
+          <th style="width:50%">Value</th>
+        </tr>
+      </table>
+      <div id="mem-div" style="overflow-y:scroll;height:350px;" onscroll=checkMemory()>
+        <table id="mem-table" style="width:100%;">
+        </table>
+      </div>
+    </div>
+
+    <div style="width:50%; margin-top:1%; float:right;">
+      <table style="width:100%">
+        <tr>
+          <th style="width:50%">Register</th>
+          <th style="width:50%">Value</th>
+        </tr>
+      </table>
+      <div id="reg-div" style="height:350px;">
+        <table id="reg-table" style="width:100%;">
+        </table>
+      </div>
+    </div>
+
+  </body>
+</html>
