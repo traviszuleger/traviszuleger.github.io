@@ -187,8 +187,6 @@ function refreshRegisters()
     reg.innerHTML = registerInfo[i].split(": ")[0];
     val.innerHTML = registerInfo[i].split(": ")[1];
 
-    reg.setAttribute('id', 'reg_')
-
     style = "width:50%;height:14px;";
     if(i % 2 == 0)
     {
@@ -202,6 +200,37 @@ function refreshRegisters()
     row.appendChild(val);
     regtable.appendChild(row);
   }
+
+  var flagsInBytes = registerInfo[registerInfo.length-1].split(": ")[1].split(" ");
+  flags = ["Full", "Half", "Subtract", "Zero"];
+  var i = 3;
+  flagsInBits = flagsInBytes[6].split("");
+
+  flagsInBits.forEach(function(bit)
+  {
+    var row = document.createElement("tr");
+    var reg = document.createElement("th");
+    var val = document.createElement("th");
+
+    row.setAttribute('id', 'flags_' + i);
+
+    reg.innerHTML = "Flag - " + flags[i];
+    val.innerHTML = bit;
+
+    style = "width:50%;height:14px;";
+    if(i % 2 == 1)
+    {
+      style += "background-color:#d0d0d0;";
+    }
+
+    reg.setAttribute("style", style);
+    val.setAttribute("style", style);
+
+    row.appendChild(reg);
+    row.appendChild(val);
+    regtable.appendChild(row);
+    i--;
+  });
 }
 
 const REG_DUMP = 1;
@@ -259,6 +288,11 @@ function memorySearch()
   {
     lastRowSearched.style.backgroundColor = lastRowColor;
   }
+  var memtable = document.getElementById('mem-table');
+  while(memtable.hasChildNodes())
+  {
+    memtable.removeChild(memtable.firstChild);
+  }
 
   var memdiv = document.getElementById('mem-div');
   var val = document.getElementById('memory-addr').value;
@@ -302,13 +336,9 @@ function loadMemory(addr)
 {
   var memtable = document.getElementById('mem-table');
 
-  var current = addr ? parseInt(addr, 16)+10 : address + 0x0400;
-  address     = addr ? parseInt(addr, 16)-10 : address;
-
-  while(memtable.hasChildNodes())
-  {
-    memtable.removeChild(memtable.firstChild);
-  }
+  var current = addr ? parseInt(addr, 16)+8 : address + 0x0400;
+  address     = addr ? parseInt(addr, 16)-8 : address;
+  address     = address <= 0 ? 0 : address;
 
   for(; address <= current && address <= 0xFFFF; ++address)
   {
@@ -324,7 +354,7 @@ function loadMemory(addr)
     style = "width:50%;height:14px;";
     if(address % 2 == 1)
     {
-      style += "background-color:#d0d0d0;";
+      row.style = "background-color:#d0d0d0;";
     }
     addr.setAttribute("style",style);
     val.setAttribute("style",style);
